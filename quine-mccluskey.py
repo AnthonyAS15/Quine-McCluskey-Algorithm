@@ -20,5 +20,3 @@ num_binarios = min_binario([1,3,5,8])
 
 for num in num_binarios:
     print(num)
-
-print("send nudes")
