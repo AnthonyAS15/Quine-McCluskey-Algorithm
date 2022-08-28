@@ -13,6 +13,14 @@ def min_binario(minterminos):
         min_binarios.append(mintermino)
     return min_binarios
 
+def list_strings_minterms (min_binarios):   
+
+    return list_strings_minterms
+
+
+
+
+    
 ########################################################
 
 #Main
