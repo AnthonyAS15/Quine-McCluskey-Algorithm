@@ -42,7 +42,7 @@ def Agrupar_min_1s (min_binario): #Recibe una lista implementada por min_binario
     return Lista_de_lista
 
 def main():
-    num_binarios = min_binario([1, 3, 5, 8])
+    num_binarios = min_binario([1, 3, 5, 8, 11, 13, 22, 23, 24, 27])
     print ("Función def min_binario(minterminos): =")
     for num in num_binarios:
         print(num)
