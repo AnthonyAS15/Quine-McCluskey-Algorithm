@@ -7,12 +7,7 @@
 #Funciones
 
 #Función para transformar los minterminos a su forma binaria
-<<<<<<< HEAD
-from re import L
 
-
-=======
->>>>>>> 9d62cb3ac757d830069d51069518af568947f309
 def min_binario(minterminos):
     min_binarios = []
     for min in minterminos:
@@ -45,11 +40,7 @@ def Agrupar_min_1s (min_binario): #Recibe una lista implementada por min_binario
     return Lista_de_lista
 
 def main():
-<<<<<<< HEAD
-    num_binarios = min_binario([1, 3, 5, 8, 11, 13, 22, 23, 24])
-=======
     num_binarios = min_binario([1, 2, 3, 4, 11, 12, 13, 14])
->>>>>>> 9d62cb3ac757d830069d51069518af568947f309
     print ("Función def min_binario(minterminos): =")
     for num in num_binarios:
         print(num)
