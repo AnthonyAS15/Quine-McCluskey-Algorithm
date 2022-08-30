@@ -1,6 +1,10 @@
 #Bibliotecas
 
 
+########################################################
+
+#Variables globales
+Literales = { 0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F" } #Diccionario segun la cantidad para la cantidad de casos expresiones de 4, 5 y 6 literales.
 
 ########################################################
 
@@ -99,8 +103,8 @@ def encontrar_implicantes_primos(agrupacion_de_1s):
 
     if cantidad_grupos > 0: #Si la lista posee dos grupos o más.
         for contador1 in range(cantidad_grupos):
-            for contador2, min1 in enumerate(agrupacion_de_1s[contador1]): #Se inicia en 1 el contador para no tomar en cuenta el indicador de cada grupo.
-                for contador3, min2 in enumerate(agrupacion_de_1s[contador1+1]):
+            for min1 in agrupacion_de_1s[contador1]: #Se inicia en 1 el contador para no tomar en cuenta el indicador de cada grupo.
+                for min2 in agrupacion_de_1s[contador1+1]:
                     difiere_1bit, nuevo_min = comparar(min1, min2) #Recibe True si los minterminos solo difieren en un 1 bit y el mintermino de la comparación.
                     if difiere_1bit == True:
                         implicantes.append(nuevo_min) #Añade el mintermino que difiere solo en 1 bit a la lista implicantes.
@@ -126,15 +130,100 @@ def encontrar_implicantes_primos(agrupacion_de_1s):
             for implicante in posibles_implicantes_primos:
                 implicantes_primos.append(implicante)
     elif cantidad_grupos == 0: #Si la lista solo posee un grupo.
-        for implicante in agrupacion_de_1s:
+        for implicante in agrupacion_de_1s[0]:
             implicantes_primos.append(implicante)
 
     return implicantes_primos
 
-#Función para determinar los implicantes primos esenciales
-def encontrar_implicantes_esenciales ():
-    pass
+#Función para encontrar a los minterminos que conforman a los minterminos agrupados. Por ejemplo, 10X1 es obtenido al combinar 9(1001) y 11(1011)
+def busca_minterminos(min): 
+    cant_xs = min.count('X')
+    if cant_xs == 0:
+        return [int(min,2)]
+    x = [bin(i)[2:].zfill(cant_xs) for i in range(pow(2,cant_xs))]
+    minterminos = []
 
+    for i in range(pow(2,cant_xs)):
+        minterminos2,ind = min[:],-1
+        for j in x[0]:
+            if ind != -1:
+                ind = ind+minterminos2[ind+1:].find('X')+1
+            else:
+                ind = minterminos2[ind+1:].find('X')
+            minterminos2 = minterminos2[:ind]+j+minterminos2[ind+1:]
+        minterminos.append(int(minterminos2,2))
+        x.pop(0)
+
+    return minterminos
+
+#Función para determinar los implicantes primos esenciales
+def encontrar_implicantes_esenciales(implicantes_primos):
+    implicantes_esenciales = []
+    implicantes = [] #Almacena una lista de los minterminos relacionados con su respectivo implicante primo.
+    comprobacion_implicantes_primos = [] #Almacena un valor booleano. True si el mintermino no se repite, False si se repite.
+    posibles_implicantes = []
+
+    for min in implicantes_primos:
+        minterminos = busca_minterminos(min)
+        implicantes.append(minterminos)
+
+    cantidad_implicantes = len(implicantes)-1 #Cuenta los implicantes primos -1
+
+    if cantidad_implicantes > 1: #Si la lista posee dos o más implicantes primos
+        for contador1 in range(cantidad_implicantes):
+            for min1 in implicantes[contador1]:
+                for min2 in implicantes[contador1+1]:
+                    if min1 == min2:
+                        comprobacion_implicantes_primos.append(False)
+                        if contador1 == cantidad_implicantes -1: #Si es del último grupo
+                                if implicantes_primos[contador1+1] not in posibles_implicantes: #Si el mintermino se ha repetido y ya está en la lista
+                                    posibles_implicantes.remove(implicantes_primos[contador1+1]) #Se va a elimiinar el mintermino del último grupo en posibles_implicantes
+                    else:
+                        comprobacion_implicantes_primos.append(True)
+                        if contador1 == cantidad_implicantes -1: #Si es del último grupo
+                                if implicantes_primos[contador1+1] not in posibles_implicantes: #Si el mintermino no se ha repetido y no está aún en la lista
+                                    posibles_implicantes.append(implicantes_primos[contador1+1]) #Se va a insertar el mintermino del último grupo en posibles_implicantes
+                for cant, comprobacion in enumerate(comprobacion_implicantes_primos): #Comprobar si el elemento es un implicante esencial o no.
+                    if comprobacion == False:
+                        break
+                    elif comprobacion == True and cant == len(comprobacion_implicantes_primos) -1:
+                        implicantes_esenciales.append(implicantes_primos[contador1]) #Añadir el mintermino a los implicantes esenciales dado que posee un mintermino que no se repite
+
+                comprobacion_implicantes_primos = []
+
+        if posibles_implicantes != []:
+            for implicante in posibles_implicantes:
+                implicantes_esenciales.append(implicante)
+        
+    elif cantidad_implicantes == 0: #Si la lista solo tiene un implicante primo
+        implicantes_esenciales.append(implicantes_primos)
+    
+    for implicante in implicantes_esenciales:
+        while implicantes_esenciales.count(implicante) > 1:# Revisa si el mintermino se repite en la lista.
+            implicantes_esenciales.remove(implicante)# Si se repite, elimina la primera repeticion
+
+    return implicantes_esenciales
+
+#Función para convertir la ecuación Booleana
+def Convertir_Booleana(expresiones):
+    lista = []
+    for termino in expresiones:
+        a = " "
+        for x in range(len(termino)): #Pasa por toda la lista para verificar si se encuentra una X la cual la quita y si hay un 0 niega la letra
+            if termino[x] == "X":
+                continue
+            a += Literales[x]
+            if termino[x] == "0":
+                 a += "'"
+        lista.append(a)
+    return lista
+
+#Función para convertir finalmente la ecuación booleana con forma de F= " " + " " + " " + ...
+def Sumar_Booleana(lista):
+    a = "F = " #pone el "F=" delante de la lista 
+    for elemento in lista:
+        a += elemento + " + " #pone los demás en la lista 
+    print(a[:len(a)-3])
 
 #Función que va a ejecutar el código principal del programa
 def main():
@@ -142,22 +231,26 @@ def main():
     minterminos.sort()
 
     num_binarios = min_binario(minterminos)
-    print ("Función def min_binario(minterminos): =")
+    print ("Minterminos:")
     print(num_binarios)
     num_binarios.sort()
 
     agrupacion_de_1s = Agrupar_min_1s(num_binarios)
     agrupacion_de_1s.sort(key=lambda x: x[0])
-    print ("Función def agrupar_min_1s (min_binario): ")
+    print ("Minterminos agrupados:")
     print(agrupacion_de_1s)
 
-    comparacion, nuevo_min = comparar("1101","1111")
-    print ("Función comparar(min1, min2): ")
-    print(comparacion, nuevo_min)
-
     implicantes_primos = encontrar_implicantes_primos(agrupacion_de_1s)
-    print("Función encontrar_implicantes_primos(agrupacion_de_1s): ")
+    print("Implicantes primos:")
     print(implicantes_primos)
+
+    implicantes_primos_esenciales = encontrar_implicantes_esenciales(implicantes_primos)
+    print("Implicantes esenciales:")
+    print(implicantes_primos_esenciales)
+
+    terminos = Convertir_Booleana(implicantes_primos_esenciales)
+    print("Solución:")
+    Sumar_Booleana (terminos)
 
 ########################################################
 
