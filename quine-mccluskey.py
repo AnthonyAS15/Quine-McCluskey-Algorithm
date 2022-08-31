@@ -55,15 +55,6 @@ def eliminar_indicador(agrupacion_de_1s):
 
     return agrupacion_de_1s
 
-#Función para elimintar listas vacías
-def eliminar_vacias(lista_de_listas):
-    lista_sin_vacias = []
-    for lista in lista_de_listas:
-        if lista != [""]:
-            lista_sin_vacias.append(lista)
-    
-    return lista_sin_vacias
-
 #Función que compara si dos minterminos solo difieren en un bit
 def comparar(min1, min2):
     limite = 0
@@ -94,31 +85,39 @@ def min_agrupado(min):
 #Esta función va a hacer uso de la recursividad para cumplir con su propósito
 def encontrar_implicantes_primos(agrupacion_de_1s):
     agrupacion_de_1s = eliminar_indicador(agrupacion_de_1s) #Eliminar el indicador de 1s al comienzo de la lista
-    agrupacion_de_1s = eliminar_vacias(agrupacion_de_1s) #Elimina las listas vacías que existan dentro de la lista.
     implicantes = [] #Almacena los implicantes que aún no se sabe si son primos.
-    implicantes_primos = [] 
-    posibles_implicantes_primos = [] #Almacena los implicantes del último que pueden ser implicantes primos.
+    implicantes_primos = []
+    posibles_implicantes_finales = [] #Almacena los implicantes del último que pueden ser implicantes primos.
     comprobacion_implicantes_primos = [] #Almacena una lista de booleanos que verifican si un mintermino no se pudo relacionar con ningún otro.
     cantidad_grupos = len(agrupacion_de_1s)-1 #Cuenta la cantidad de grupos por cantidad de 1s excepto el ultimo.
 
     if cantidad_grupos > 0: #Si la lista posee dos grupos o más.
         for contador1 in range(cantidad_grupos):
             for min1 in agrupacion_de_1s[contador1]: #Se inicia en 1 el contador para no tomar en cuenta el indicador de cada grupo.
-                for min2 in agrupacion_de_1s[contador1+1]:
+                for contador2, min2 in enumerate(agrupacion_de_1s[contador1+1]):
                     difiere_1bit, nuevo_min = comparar(min1, min2) #Recibe True si los minterminos solo difieren en un 1 bit y el mintermino de la comparación.
                     if difiere_1bit == True:
                         implicantes.append(nuevo_min) #Añade el mintermino que difiere solo en 1 bit a la lista implicantes.
                         if contador1 == cantidad_grupos -1: #Si un mintermino del último grupo difiere en un solo bit
-                            if min2 in posibles_implicantes_primos and min_agrupado(min2):#, se borra de la lista de posibles_implicantes_primos.
-                                posibles_implicantes_primos.remove(min2)
+                            if min2 in posibles_implicantes_finales:#, se borra de la lista de posibles_implicantes_finales.
+                                posibles_implicantes_finales.remove(min2)
+
                     else:
                         if contador1 == cantidad_grupos -1: #Si es del último grupo
-                            if min2 not in posibles_implicantes_primos and min_agrupado(min2): #Si el mintermino no ha sido combinado y no está aún en la lista
-                                posibles_implicantes_primos.append(min2) #Se va a insertar el mintermino del último grupo en posibles_implicantes_primos
+                            if min2 not in posibles_implicantes_finales: #Si el mintermino no ha sido combinado y no está aún en la lista
+                                posibles_implicantes_finales.append(min2) #Se va a insertar el mintermino del último grupo en posibles_implicantes_finales
+
                     comprobacion_implicantes_primos.append(difiere_1bit)
                 for cant, comprobacion in enumerate(comprobacion_implicantes_primos): #Comprobar si el elemento es un implicante primo o no.
+                     #Calcular la longitud del segundo grupo.
+                    if isinstance(agrupacion_de_1s[contador1+1], str): #Si solo está un string en el segundo grupo
+                        longitud_grupo2 = 0
+                    else:
+                        longitud_grupo2 = len(agrupacion_de_1s[contador1+1]) -1
                     if comprobacion == True:
                         break
+                    elif comprobacion == False and cant == len(comprobacion_implicantes_primos) -1 and contador2 == longitud_grupo2 and not min_agrupado(min1):
+                        implicantes_primos.append(min1) #Añadir el mintermino a los implicantes primos dado que no se pudo emparejar.
                     elif comprobacion == False and cant == len(comprobacion_implicantes_primos) -1 and min_agrupado(min1):
                         implicantes_primos.append(min1) #Añadir el mintermino a los implicantes primos dado que no se pudo emparejar.
 
@@ -126,17 +125,32 @@ def encontrar_implicantes_primos(agrupacion_de_1s):
         
         grupos_implicantes = Agrupar_min_1s(implicantes)
         implicantes_primos += encontrar_implicantes_primos(grupos_implicantes)
-        if posibles_implicantes_primos != []:
-            for implicante in posibles_implicantes_primos:
+        if posibles_implicantes_finales != []:
+            for implicante in posibles_implicantes_finales:
                 implicantes_primos.append(implicante)
+
+        if implicantes_primos == [] and contador1 == cantidad_grupos -1: #Si no fue posible hacer alguna combinación de minterminos.
+            for grupo in agrupacion_de_1s:
+                for min in grupo:
+                    implicantes_primos.append(min) #Almacenar todos los minterminos como implicantes primos.
+
     elif cantidad_grupos == 0: #Si la lista solo posee un grupo.
         for implicante in agrupacion_de_1s[0]:
             implicantes_primos.append(implicante)
 
     return implicantes_primos
 
+#Función para eliminar los elementos repetidos de una lista.
+def eliminar_repetidos(lista):
+    for elemento in lista:
+        cant = lista.count(elemento)
+        while cant > 1:
+            lista.remove(elemento)
+            cant -= 1
+    return lista
+
 #Función para encontrar a los minterminos que conforman a los minterminos agrupados. Por ejemplo, 10X1 es obtenido al combinar 9(1001) y 11(1011)
-def busca_minterminos(min): 
+def busca_minterminos(min): #Los minterminos se almacenan en su forma decimal.
     cant_xs = min.count('X')
     if cant_xs == 0:
         return [int(min,2)]
@@ -161,7 +175,7 @@ def encontrar_implicantes_esenciales(implicantes_primos):
     implicantes_esenciales = []
     implicantes = [] #Almacena una lista de los minterminos relacionados con su respectivo implicante primo.
     comprobacion_implicantes_primos = [] #Almacena un valor booleano. True si el mintermino no se repite, False si se repite.
-    posibles_implicantes = []
+    restar_grupo = 0 #Compensa para evitar sobrepasar el límite de la lista. Resta 1 si se está iterando el segundo grupo, 2 si se está iterando el tercer grupo y así.
 
     for min in implicantes_primos:
         minterminos = busca_minterminos(min)
@@ -169,38 +183,53 @@ def encontrar_implicantes_esenciales(implicantes_primos):
 
     cantidad_implicantes = len(implicantes)-1 #Cuenta los implicantes primos -1
 
-    if cantidad_implicantes > 1: #Si la lista posee dos o más implicantes primos
-        for contador1 in range(cantidad_implicantes):
-            for min1 in implicantes[contador1]:
-                for min2 in implicantes[contador1+1]:
-                    if min1 == min2:
-                        comprobacion_implicantes_primos.append(False)
-                        if contador1 == cantidad_implicantes -1: #Si es del último grupo
-                                if implicantes_primos[contador1+1] not in posibles_implicantes: #Si el mintermino se ha repetido y ya está en la lista
-                                    posibles_implicantes.remove(implicantes_primos[contador1+1]) #Se va a elimiinar el mintermino del último grupo en posibles_implicantes
-                    else:
-                        comprobacion_implicantes_primos.append(True)
-                        if contador1 == cantidad_implicantes -1: #Si es del último grupo
-                                if implicantes_primos[contador1+1] not in posibles_implicantes: #Si el mintermino no se ha repetido y no está aún en la lista
-                                    posibles_implicantes.append(implicantes_primos[contador1+1]) #Se va a insertar el mintermino del último grupo en posibles_implicantes
-                for cant, comprobacion in enumerate(comprobacion_implicantes_primos): #Comprobar si el elemento es un implicante esencial o no.
-                    if comprobacion == False:
-                        break
-                    elif comprobacion == True and cant == len(comprobacion_implicantes_primos) -1:
-                        implicantes_esenciales.append(implicantes_primos[contador1]) #Añadir el mintermino a los implicantes esenciales dado que posee un mintermino que no se repite
+    if cantidad_implicantes > 0: #Si la lista posee dos o más implicantes primos
+        for contador1 in range(cantidad_implicantes+1):
+            if contador1 != cantidad_implicantes: #Comprobar que los minterminos no sean del último grupo.
+                for min1 in implicantes[contador1]:
+                    for contador2 in range(1, len(implicantes) - restar_grupo):
+                        for min2 in implicantes[contador1+contador2]:
+                            if min1 == min2:
+                                comprobacion_implicantes_primos.append(False)
+                                break
+                            else:
+                                comprobacion_implicantes_primos.append(True)
 
-                comprobacion_implicantes_primos = []
+                    for cant, comprobacion in enumerate(comprobacion_implicantes_primos): #Comprobar si el elemento es un implicante esencial o no.
+                        if comprobacion == False:
+                            break
+                        elif comprobacion == True and cant == len(comprobacion_implicantes_primos) -1:
+                            if implicantes_primos[contador1] not in implicantes_esenciales:
+                                implicantes_esenciales.append(implicantes_primos[contador1]) #Añadir el mintermino a los implicantes esenciales dado que posee un mintermino que no se repite.
 
-        if posibles_implicantes != []:
-            for implicante in posibles_implicantes:
-                implicantes_esenciales.append(implicante)
+                    comprobacion_implicantes_primos = []
+
+                restar_grupo += 1
+                
+            else: #Si solo queda por comparar el último grupo
+                implicantes_invertidos = list(reversed(implicantes)) #Invertir la lista para poder comparar los últimos minterminos con los demás.
+                implicantes_primos_invertidos = list(reversed(implicantes_primos)) #Invertir la lista de los implicantes primos.
+
+                for min1 in implicantes_invertidos[0]:
+                    if implicantes_primos_invertidos[0] not in implicantes_esenciales:
+                        for contador2 in range(1, len(implicantes)):
+                            for min2 in implicantes_invertidos[contador2]:
+                                if min1 == min2:
+                                    comprobacion_implicantes_primos.append(False)
+                                    break
+                                else:
+                                    comprobacion_implicantes_primos.append(True)
+                        
+                        for cant, comprobacion in enumerate(comprobacion_implicantes_primos): #Comprobar si el elemento es un implicante esencial o no.
+                            if comprobacion == False:
+                                break
+                            elif comprobacion == True and cant == len(comprobacion_implicantes_primos) -1:
+                                implicantes_esenciales.append(implicantes_primos_invertidos[0]) #Añadir el mintermino a los implicantes esenciales dado que posee un mintermino que no se repite.
+
+                        comprobacion_implicantes_primos = []                
         
     elif cantidad_implicantes == 0: #Si la lista solo tiene un implicante primo
-        implicantes_esenciales.append(implicantes_primos)
-    
-    for implicante in implicantes_esenciales:
-        while implicantes_esenciales.count(implicante) > 1:# Revisa si el mintermino se repite en la lista.
-            implicantes_esenciales.remove(implicante)# Si se repite, elimina la primera repeticion
+        implicantes_esenciales.append(implicantes_primos[0])
 
     return implicantes_esenciales
 
@@ -227,7 +256,7 @@ def Sumar_Booleana(lista):
 
 #Función que va a ejecutar el código principal del programa
 def main():
-    minterminos = [4, 8, 11, 12, 15]
+    minterminos = [4, 8, 15]
     minterminos.sort()
 
     num_binarios = min_binario(minterminos)
@@ -241,6 +270,7 @@ def main():
     print(agrupacion_de_1s)
 
     implicantes_primos = encontrar_implicantes_primos(agrupacion_de_1s)
+    implicantes_primos = eliminar_repetidos(implicantes_primos)
     print("Implicantes primos:")
     print(implicantes_primos)
 
