@@ -4,7 +4,7 @@
 ########################################################
 
 #Variables globales
-Literales = { 0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F" } #Diccionario segun la cantidad para la cantidad de casos expresiones de 4, 5 y 6 literales.
+Literales = { 0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F" } #Diccionario para la cantidad de casos expresiones de 4, 5 y 6 literales.
 
 ########################################################
 
@@ -57,7 +57,7 @@ def eliminar_indicador(agrupacion_de_1s):
 
 #Función que compara si dos minterminos solo difieren en un bit
 def comparar(min1, min2):
-    limite = 0
+    limite = 0 #Cantidad de bits en los que difiere.
     cantidad_bits = len(min1)
     nuevo_min = ""
 
@@ -153,8 +153,8 @@ def eliminar_repetidos(lista):
 def busca_minterminos(min): #Los minterminos se almacenan en su forma decimal.
     cant_xs = min.count('X')
     if cant_xs == 0:
-        return [int(min,2)]
-    x = [bin(i)[2:].zfill(cant_xs) for i in range(pow(2,cant_xs))]
+        return [int(min, 2)]
+    x = [bin(i)[2:].zfill(cant_xs) for i in range(pow(2, cant_xs))]
     minterminos = []
 
     for i in range(pow(2,cant_xs)):
@@ -165,7 +165,7 @@ def busca_minterminos(min): #Los minterminos se almacenan en su forma decimal.
             else:
                 ind = minterminos2[ind+1:].find('X')
             minterminos2 = minterminos2[:ind]+j+minterminos2[ind+1:]
-        minterminos.append(int(minterminos2,2))
+        minterminos.append(int(minterminos2, 2))
         x.pop(0)
 
     return minterminos
@@ -256,7 +256,7 @@ def Sumar_Booleana(lista):
 
 #Función que va a ejecutar el código principal del programa
 def main():
-    minterminos = [4, 8, 15]
+    minterminos = [1, 4, 6, 15]
     minterminos.sort()
 
     num_binarios = min_binario(minterminos)
