@@ -1,5 +1,6 @@
 #Bibliotecas
 
+from crearpdf import*
 
 ########################################################
 
@@ -256,7 +257,7 @@ def Sumar_Booleana(lista):
 
 #Función que va a ejecutar el código principal del programa
 def main():
-    minterminos = [1, 4, 6, 15]
+    minterminos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ,12 , 13, 14 , 15]
     minterminos.sort()
 
     num_binarios = min_binario(minterminos)
@@ -285,4 +286,6 @@ def main():
 ########################################################
 
 #Main
-main()
+if __name__ == '__main__':
+    main()
+    
