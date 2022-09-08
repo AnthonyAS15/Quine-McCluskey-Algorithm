@@ -1,20 +1,28 @@
 #Bibliotecas
-
-from crearpdf import*
+import copy
+from pylatex import Document, LongTable, Section, Command, NewPage
+from pylatex.utils import bold, NoEscape
 
 ########################################################
 
 #Variables globales
+
 Literales = { 0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F" } #Diccionario para la cantidad de casos expresiones de 4, 5 y 6 literales.
+
+archivo = open("problema.txt", "r") #Abre el archivo txt a utilizar
+literalentrada= archivo.readlines(1)
+NumLiterales=int(literalentrada[0]) #Se crea la cantidad de Literales a utilizar
 
 ########################################################
 
 #Funciones
 
+#Funciones del algoritmo:
+
 #Función para transformar los minterminos a su forma binaria
 def min_binario(minterminos):
     min_binarios = []
-    cantidad_bits = len(format(minterminos[-1], "b")) #Mayor cantidad de bits de los minterminos disponibles.
+    cantidad_bits = NumLiterales #Mayor cantidad de bits de los minterminos disponibles.
 
     for min in minterminos:
         mintermino = format(min, "b") #Transforma un número entero a uno binario. int -> string.
@@ -254,10 +262,209 @@ def Sumar_Booleana(lista):
     for elemento in lista:
         a += elemento + " + " #pone los demás en la lista 
     print(a[:len(a)-3])
+    return a
+
+########################################################
+
+#Funciones para la creación del documento:
+
+#Crea la portada del documento.
+def portada(doc):
+    with doc.create(Section('Portada')):
+        doc.preamble.append(Command('title', 'Algoritmo de Quine-McCluskey'))
+        doc.preamble.append(Command('author', 'Anthony Artavia Salazar \n Diego Huertas Solorzano \n Justin Segura Rodríguez'))
+        doc.preamble.append(Command('date', NoEscape(r'\today')))
+        doc.append(NoEscape(r'\maketitle'))
+
+#Crea una diapositiva con los datos del archivo de texto.
+def archivo_texto(literal, minterminos,doc):
+    with doc.create(Section('Entrada: Archivo de Texto')):
+        doc.append(bold('Entrada: Archivo de Texto\n'))
+        doc.append('\nCantidad de literales: ')
+        doc.append(literal)
+        doc.append('\n')
+        doc.append('\nMinterminos: ')
+        for indice, min in enumerate(minterminos):
+            doc.append(min)
+            if indice != len(minterminos)-1:
+                doc.append(', ')
+        doc.append('\n')
+    doc.append(NewPage())
+
+#Crea una diapositiva con una tabla con los minterminos con su respectiva representación en binario.
+def minterminos_inicio(minterminos, num_binarios, doc):
+    with doc.create(Section('Minterminos')):
+        doc.append(bold('Minterminos'))
+        with doc.create(LongTable("c c")) as data_table:
+            encabezado = ["Mintermino en Decimal", "Mintermino en Binario"]
+            data_table.add_row(encabezado, mapper=[bold])
+            data_table.add_hline()
+            data_table.end_table_header()
+
+            for indice in range(len(minterminos)):
+                fila = [minterminos[indice], num_binarios[indice]]
+                data_table.add_row(fila)
+            data_table.add_hline()
+
+    doc.append(NewPage())
+
+#Crea una tabla con los minterminos agrupados según la cantidad de unos que poseen.
+def minterminos_agrupados(agrupacion_de_1s, doc):
+    with doc.create(Section('Minterminos Agrupados')):
+        doc.append(bold('Minterminos Agrupados'))
+        with doc.create(LongTable("c c c")) as data_table:
+            encabezado = ["Cantidad de Unos", "Minterminos en Decimal","Minterminos en Binario"]
+            data_table.add_row(encabezado)
+            data_table.add_hline()
+            data_table.end_table_header()
+
+            cant_unos = []
+            for lista in agrupacion_de_1s:
+                cant_unos.append(lista[0])
+            
+            grupos_minterminos = eliminar_indicador(agrupacion_de_1s)
+            minterminos = []
+
+            for grupo in grupos_minterminos:
+                for min in grupo:
+                    minterminos.append(busca_minterminos(min)[0])
+            
+            num_mintermino = 0
+            for num_grupo, grupo in enumerate(grupos_minterminos):
+                for indice in range(len(grupo)):
+                    fila = [cant_unos[num_grupo], minterminos[num_mintermino], grupo[indice]]
+                    data_table.add_row(fila)
+                    num_mintermino += 1
+            data_table.add_hline()
+
+    doc.append(NewPage())
+
+#Crea una tabla con los implicantes primos.
+def implicantes_primos_documento(implicantes, doc):
+    with doc.create(Section('Implicantes Primos')):
+        doc.append(bold('Implicantes Primos'))
+        with doc.create(LongTable("c c")) as data_table:
+            encabezado = ["Minterminos en Decimal", "Minterminos en Binario"]
+            data_table.add_row(encabezado)
+            data_table.add_hline()
+            data_table.end_table_header()
+
+            minterminos = []
+            for implicante in implicantes:
+                minterminos.append(busca_minterminos(implicante))
+            
+            minterminos_agrupados = []
+            mintermino_agrupado = ""
+            for min in minterminos:
+                for m in min:
+                    mintermino_agrupado += str(m)
+                    if m == min[-1]:
+                        break
+                    else:
+                        mintermino_agrupado += ", "
+                minterminos_agrupados.append(mintermino_agrupado)
+                mintermino_agrupado = ""
+            
+            for indice, implicante in enumerate(implicantes):
+                    fila = [minterminos_agrupados[indice], implicante]
+                    data_table.add_row(fila)
+            data_table.add_hline()
+
+    doc.append(NewPage())
+
+#Crea una tabla con los implicantes primos esenciales.
+def implicantes_esenciales(implicantes_primos_esenciales,doc):
+    with doc.create(Section('Implicantes Primos Esenciales')):
+        doc.append(bold('Implicantes Primos Esenciales'))
+        with doc.create(LongTable("c c")) as data_table:
+            encabezado = ["Minterminos en Decimal", "Minterminos en Binario"]
+            data_table.add_row(encabezado)
+            data_table.add_hline()
+            data_table.end_table_header()
+
+            minterminos = []
+            for implicante in implicantes_primos_esenciales:
+                minterminos.append(busca_minterminos(implicante))
+            
+            minterminos_agrupados = []
+            mintermino_agrupado = ""
+            for min in minterminos:
+                for m in min:
+                    mintermino_agrupado += str(m)
+                    if m == min[-1]:
+                        break
+                    else:
+                        mintermino_agrupado += ", "
+                minterminos_agrupados.append(mintermino_agrupado)
+                mintermino_agrupado = ""
+            
+            for indice, implicante in enumerate(implicantes_primos_esenciales):
+                    fila = [minterminos_agrupados[indice], implicante]
+                    data_table.add_row(fila)
+            data_table.add_hline()
+
+    doc.append(NewPage())
+
+#Crea una diapositiva con la solucion del algoritmo.
+def solucion(terminos, doc):
+    with doc.create(Section("Solución")):
+         doc.append(bold("Solución\n"))
+         doc.append('\nSimplificacion obtenida: ')
+         doc.append('\n')
+         a = Sumar_Booleana(terminos)
+         doc.append(a[:len(a)-3])
+
+    doc.append(NewPage())
+
+#Crea el documento pdf resultante.
+def creacion_documento(doc):
+    doc.generate_pdf('Solución del problema', clean_tex=False, clean=True)
+
+#####################################
 
 #Función que va a ejecutar el código principal del programa
 def main():
-    minterminos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ,12 , 13, 14 , 15]
+    
+    #Toma de los datos del documento txt.
+    archivo = open("problema.txt", "r") #Utiliza el archivo txt a utilizar
+
+    littexto= archivo.readlines(1) #Lo volvemos a tomar, para poner tomar la lista completa
+    literal=int(littexto[0])
+
+    mintexto = archivo.readlines(2)
+    lista1=[]
+
+    for line in mintexto:
+        line_strip= line.strip()
+        line_split= line_strip.split(',') #divide cada elemento de la lista por un ','
+        lista1.append(line_split)
+    archivo.close()
+
+    lista2=[]
+
+    for i in lista1:
+        for j in i:
+            lista2.append(j)
+    lista2 = [c.replace(',', '') for c in lista2]
+
+    for i in range(len(lista2)): #crea la funcion que convierte la funcion en un int
+        lista2[i] = int(lista2[i])
+
+   #/////////////////////////////////////////////////////////////////////////////
+
+    print("El número de literales a utilizar, es:",literal)
+
+    print("La lista que ahora se va a utilizar es:",lista2, "\n")
+
+    #Creación del documento
+    geometry_options = {"tmargin": "1cm", "lmargin": "1cm", "margin": "1cm"}
+    doc = Document(page_numbers=True, geometry_options=geometry_options, documentclass="beamer",)
+    
+    #Creación de la portada
+    portada(doc)
+    
+    #Ejecución del algoritmo y añadido al documento a retornar.
+    minterminos = lista2
     minterminos.sort()
 
     num_binarios = min_binario(minterminos)
@@ -265,27 +472,45 @@ def main():
     print(num_binarios)
     num_binarios.sort()
 
+    #Añadir al documento lo recibido del archivo de texto y los minterminos.
+    archivo_texto(literal, minterminos, doc)
+    minterminos_inicio(minterminos, num_binarios, doc)
+
     agrupacion_de_1s = Agrupar_min_1s(num_binarios)
     agrupacion_de_1s.sort(key=lambda x: x[0])
     print ("Minterminos agrupados:")
     print(agrupacion_de_1s)
 
-    implicantes_primos = encontrar_implicantes_primos(agrupacion_de_1s)
+    grupos_unos = copy.deepcopy(agrupacion_de_1s) #Crear una copia de lista antes de que sea modificada por la siguiente función
+    #Añadir a la presentación una tabla con los minterminos agrupados.
+    minterminos_agrupados(agrupacion_de_1s, doc)
+
+    implicantes_primos = encontrar_implicantes_primos(grupos_unos)
     implicantes_primos = eliminar_repetidos(implicantes_primos)
     print("Implicantes primos:")
     print(implicantes_primos)
+
+    #Añadir una tabla con los implicantes primos al documento.
+    implicantes_primos_documento(implicantes_primos, doc)
 
     implicantes_primos_esenciales = encontrar_implicantes_esenciales(implicantes_primos)
     print("Implicantes esenciales:")
     print(implicantes_primos_esenciales)
 
+    #Añadir una tabla con los implicantes primos esenciales al documento.
+    implicantes_esenciales(implicantes_primos_esenciales, doc)
+
     terminos = Convertir_Booleana(implicantes_primos_esenciales)
     print("Solución:")
-    Sumar_Booleana (terminos)
+
+    #Añadir la solución al documento.
+    solucion(terminos, doc)
+    
+	#Crear el pdf
+    creacion_documento(doc)
 
 ########################################################
 
 #Main
 if __name__ == '__main__':
     main()
-    
